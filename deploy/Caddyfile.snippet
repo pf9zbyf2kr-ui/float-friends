@@ -1,0 +1,12 @@
+# float-friends-managed
+float.154.219.105.171.sslip.io {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "SAMEORIGIN"
+		Permissions-Policy "camera=(self), microphone=(self), geolocation=(self)"
+		-Server
+	}
+	reverse_proxy float-friends:3000
+}
