@@ -852,6 +852,12 @@
   gap: 12px;
 }
 
+.ui-config-card[data-active="true"] {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.035),
+              inset 0 0 0 1.5px var(--c-icon-active),
+              inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
 .ui-group-card {
   background: var(--c-card);
   backdrop-filter: blur(var(--ui-blur)) saturate(var(--ui-saturate));

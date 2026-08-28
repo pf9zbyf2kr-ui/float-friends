@@ -30,9 +30,16 @@ async function ensurePlatformAiConfig(): Promise<void> {
     preventEmptyGenerateRambling: true,
   };
   const existing = loadApiConfigs().filter((config) => config.id !== PLATFORM_API_ID);
-  saveApiConfigs([platformConfig, ...existing]);
+  const configs = [platformConfig, ...existing];
+  saveApiConfigs(configs);
   const bindings = loadBindingConfig();
-  saveBindingConfig({ ...bindings, globalDefaults: { ...bindings.globalDefaults, apiConfigId: PLATFORM_API_ID } }, false);
+  const selectedId = bindings.globalDefaults.apiConfigId;
+  const nextId = selectedId && configs.some((config) => config.id === selectedId)
+    ? selectedId
+    : PLATFORM_API_ID;
+  if (nextId !== selectedId) {
+    saveBindingConfig({ ...bindings, globalDefaults: { ...bindings.globalDefaults, apiConfigId: nextId } }, false);
+  }
 }
 
 export function AccountCloudBootstrap({ children }: { children: ReactNode }) {

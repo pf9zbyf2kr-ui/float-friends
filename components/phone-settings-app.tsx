@@ -76,8 +76,6 @@ const SETTINGS_MENU = [
     { id: "about", icon: Info, label: "关于与声明", desc: "版本与协议", iconColor: BINDING_ACCENTS.memory , glass: "about" },
 ] as const;
 
-const MANAGED_PLATFORM_AI = process.env.NEXT_PUBLIC_PLATFORM_AI_MANAGED === "true";
-
 const realtimeIconStyle = {
     "--icon-color": CONTENT_APP_ACCENTS.calendar,
 } as CSSProperties;
@@ -390,7 +388,7 @@ export function PhoneSettingsApp({ onClose, onNotice }: SettingsPageProps) {
                         <CardGrid
                             label="API Config"
                             labelClassName="settings-menu-section-title"
-                            items={SETTINGS_MENU.filter(item => ["api", "voice"].includes(item.id) && (!MANAGED_PLATFORM_AI || item.id !== "api")).map(makeCardItem)}
+                            items={SETTINGS_MENU.filter(item => ["api", "voice"].includes(item.id)).map(makeCardItem)}
                         />
                         <div className="settings-data-rules-section">
                             <h3 className="settings-menu-section-title">Data & Rules</h3>

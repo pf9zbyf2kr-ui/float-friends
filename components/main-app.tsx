@@ -281,7 +281,7 @@ export function MainApp() {
   return (
     <AccountGate>
       <AccountCloudBootstrap>
-        <FirstCharacterOnboarding>
+        <FirstCharacterOnboarding storageReady={hydrated}>
           {!splashDismissed ? (
             <SplashScreen ready={hydrated} onEnter={() => setSplashDismissed(true)} />
           ) : (

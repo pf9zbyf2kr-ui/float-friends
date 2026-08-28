@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowRight, UserRound } from "lucide-react";
 
 import { addChatContact, createOrGetSession, hydrateChatStorage } from "@/lib/chat-storage";
 import { createCharacter, loadCharacters, saveCharacters } from "@/lib/character-storage";
 
-export function FirstCharacterOnboarding({ children }: { children: ReactNode }) {
-  const [needsCharacter, setNeedsCharacter] = useState(() => loadCharacters().length === 0);
+export function FirstCharacterOnboarding({ children, storageReady }: { children: ReactNode; storageReady: boolean }) {
+  const [needsCharacter, setNeedsCharacter] = useState<boolean | null>(null);
   const [name, setName] = useState("");
   const [persona, setPersona] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (storageReady) setNeedsCharacter(loadCharacters().length === 0);
+  }, [storageReady]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,6 +41,13 @@ export function FirstCharacterOnboarding({ children }: { children: ReactNode }) 
     }
   }
 
+  if (!storageReady || needsCharacter === null) {
+    return (
+      <main className="app-root account-gate-root">
+        <section className="account-gate-panel" aria-live="polite">正在读取本机数据…</section>
+      </main>
+    );
+  }
   if (!needsCharacter) return children;
   return (
     <main className="app-root account-gate-root">

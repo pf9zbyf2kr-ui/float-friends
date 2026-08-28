@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useContext } from "react";
 import { Plus, RefreshCw, Rss, AlertCircle, FileEdit, Trash2, X, Check } from "lucide-react";
 import { SettingsContext } from "../phone-settings-app";
 import type { ApiConfig } from "@/lib/settings-types";
-import { loadApiConfigs, removeApiConfigReferences, saveApiConfigs } from "@/lib/settings-storage";
+import { loadApiConfigs, loadBindingConfig, removeApiConfigReferences, saveApiConfigs, saveBindingConfig } from "@/lib/settings-storage";
 import { generateEmbedding, isEmbeddingModelName } from "@/lib/memory-embedding";
 import { ConfirmDialog } from "@/components/ui/modal";
 import { Toggle, Input } from "@/components/ui/form";
@@ -25,6 +25,8 @@ const DEFAULT_CONFIGS: ApiConfig[] = [
     }
 ];
 
+const PLATFORM_API_ID = "platform-managed";
+
 function getNativeToolProtocolLabel(config: ApiConfig): string {
     if (config.provider === "Anthropic" && !config.baseUrl) return "Anthropic";
     if (config.provider === "Google") return "Gemini";
@@ -38,6 +40,7 @@ export function ApiSettings() {
     const [isNewConfig, setIsNewConfig] = useState(false);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [activeConfigId, setActiveConfigId] = useState("");
 
     // Testing and Fetching states
     const [isFetching, setIsFetching] = useState<Record<string, boolean>>({});
@@ -48,12 +51,10 @@ export function ApiSettings() {
     // Load from localStorage on mount
     useEffect(() => {
         const loaded = loadApiConfigs();
-        if (loaded.length > 0) {
-            setConfigs(loaded);
-        } else {
-            setConfigs(DEFAULT_CONFIGS);
-            saveApiConfigs(DEFAULT_CONFIGS);
-        }
+        const initialConfigs = loaded.length > 0 ? loaded : DEFAULT_CONFIGS;
+        setConfigs(initialConfigs);
+        if (loaded.length === 0) saveApiConfigs(initialConfigs);
+        setActiveConfigId(loadBindingConfig().globalDefaults.apiConfigId || initialConfigs[0]?.id || "");
         setIsLoaded(true);
     }, []);
 
@@ -93,12 +94,33 @@ export function ApiSettings() {
     }, [addConfig, setSubpageRightAction]);
 
     const updateConfig = (id: string, updates: Partial<ApiConfig>) => {
+        if (id === PLATFORM_API_ID) return;
         persist(configs.map(c => c.id === id ? { ...c, ...updates } : c));
     };
 
+    const activateConfig = useCallback((id: string) => {
+        if (!configs.some(config => config.id === id)) return;
+        const binding = loadBindingConfig();
+        saveBindingConfig({
+            ...binding,
+            globalDefaults: { ...binding.globalDefaults, apiConfigId: id },
+        });
+        setActiveConfigId(id);
+    }, [configs]);
+
     const removeConfig = (id: string) => {
-        persist(configs.filter(c => c.id !== id));
+        if (id === PLATFORM_API_ID) return;
+        const nextConfigs = configs.filter(c => c.id !== id);
+        persist(nextConfigs);
         removeApiConfigReferences(id);
+        if (activeConfigId === id) {
+            const fallbackId = nextConfigs.find(config => config.id === PLATFORM_API_ID)?.id || nextConfigs[0]?.id || "";
+            if (fallbackId) {
+                const binding = loadBindingConfig();
+                saveBindingConfig({ ...binding, globalDefaults: { ...binding.globalDefaults, apiConfigId: fallbackId } });
+            }
+            setActiveConfigId(fallbackId);
+        }
         const newFetchedModels = { ...fetchedModels };
         delete newFetchedModels[id];
         setFetchedModels(newFetchedModels);
@@ -216,6 +238,10 @@ export function ApiSettings() {
             <div className="flex items-center">
                 <h2 className="m-0 mx-2 ts-28 font-bold italic leading-none text-black">API Settings</h2>
             </div>
+            <div className="mx-2 rounded-[14px] border border-black/5 bg-white/55 px-4 py-3">
+                <div className="menu-label font-semibold">选择角色使用的 AI</div>
+                <div className="menu-desc">平台 AI 可以直接使用；也可以添加自己的 API，并设为当前配置。</div>
+            </div>
 
             {configs.length === 0 ? (
                 <div className="ui-empty">
@@ -235,13 +261,15 @@ export function ApiSettings() {
                     {configs.map(config => (
                         <div
                             key={config.id}
-                            className="ui-config-card min-w-0 cursor-pointer"
+                            className={`ui-config-card min-w-0 ${config.id === PLATFORM_API_ID ? "" : "cursor-pointer"}`}
                             style={{ aspectRatio: "3 / 2", padding: "12px", justifyContent: "space-between" }}
                             role="button"
-                            tabIndex={0}
-                            aria-label={`编辑 ${config.name || config.provider}`}
-                            onClick={() => setEditingId(config.id)}
+                            tabIndex={config.id === PLATFORM_API_ID ? -1 : 0}
+                            data-active={activeConfigId === config.id ? "true" : undefined}
+                            aria-label={`${activeConfigId === config.id ? "当前使用 " : "编辑 "}${config.name || config.provider}`}
+                            onClick={() => { if (config.id !== PLATFORM_API_ID) setEditingId(config.id); }}
                             onKeyDown={(event) => {
+                                if (config.id === PLATFORM_API_ID) return;
                                 if (event.target !== event.currentTarget) return;
                                 if (event.key === "Enter" || event.key === " ") {
                                     event.preventDefault();
@@ -250,11 +278,23 @@ export function ApiSettings() {
                             }}
                         >
                             <div className="min-w-0 flex flex-col gap-1">
-                                <span className="truncate text-[calc(14.4px*var(--app-text-scale,1))] font-bold leading-tight text-[var(--c-text-title)]">{config.name || config.provider}</span>
+                                <span className="truncate text-[calc(14.4px*var(--app-text-scale,1))] font-bold leading-tight text-[var(--c-text-title)]">
+                                    {config.name || config.provider}{activeConfigId === config.id ? " · 当前" : ""}
+                                </span>
                                 <span className="menu-desc truncate">{config.defaultModel || config.provider || "未设置模型"}</span>
                             </div>
                             <div className="flex gap-2 shrink-0 items-center justify-end">
-                                <button
+                                {activeConfigId !== config.id && <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        activateConfig(config.id);
+                                    }}
+                                    className="ui-btn ui-btn-outline py-1 px-2 ts-12"
+                                >
+                                    设为当前
+                                </button>}
+                                {config.id !== PLATFORM_API_ID && <button
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation();
@@ -263,8 +303,8 @@ export function ApiSettings() {
                                     className="ui-link-btn"
                                 >
                                     <FileEdit size={18} />
-                                </button>
-                                <button
+                                </button>}
+                                {config.id !== PLATFORM_API_ID && <button
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation();
@@ -274,7 +314,7 @@ export function ApiSettings() {
                                     data-variant="danger"
                                 >
                                     <Trash2 size={18} />
-                                </button>
+                                </button>}
                             </div>
                         </div>
                     ))}
