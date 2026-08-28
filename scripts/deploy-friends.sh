@@ -40,12 +40,25 @@ else
 NEXT_PUBLIC_SOURCE_CODE_URL=https://github.com/afufu/float-friends
 ACCOUNT_GATE_SECRET=$(openssl rand -hex 32)
 NEXT_PUBLIC_OPEN_REGISTRATION=true
+NEXT_PUBLIC_PLATFORM_AI_MANAGED=true
 OPEN_REGISTRATION=true
 FLOAT_BIND_ADDRESS=127.0.0.1
 FLOAT_PORT=3100
 EOF
   cp "$remote_root/.env" "$release_path/source/.env"
 fi
+# Reuse the existing momo Gateway as a private platform AI provider. The token
+# stays server-side and is never written into a NEXT_PUBLIC variable.
+if ! grep -q '^PLATFORM_AI_TOKEN=' "$remote_root/.env"; then
+  platform_token="$(sed -n 's/^GATEWAY_TOKENS=//p' /root/hiphone/server/.env | cut -d, -f1 | tr -d '\r\n')"
+  test -n "$platform_token"
+  {
+    printf '\nPLATFORM_AI_BASE_URL=http://gateway:8787/v1\n'
+    printf 'PLATFORM_AI_TOKEN=%s\n' "$platform_token"
+    printf 'PLATFORM_AI_MODEL=gpt-5.5\n'
+  } >> "$remote_root/.env"
+fi
+cp "$remote_root/.env" "$release_path/source/.env"
 cd "$release_path/source"
 docker compose -p float-friends build app
 docker compose -p float-friends up -d --no-build app

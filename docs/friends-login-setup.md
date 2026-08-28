@@ -21,6 +21,10 @@ NEXT_PUBLIC_SOURCE_CODE_URL=https://github.com/afufu/float-friends
 ACCOUNT_GATE_SECRET=<至少 32 字节的随机密钥>
 NEXT_PUBLIC_OPEN_REGISTRATION=true
 OPEN_REGISTRATION=true
+NEXT_PUBLIC_PLATFORM_AI_MANAGED=true
+PLATFORM_AI_BASE_URL=http://gateway:8787/v1
+PLATFORM_AI_TOKEN=<仅服务端使用的网关令牌>
+PLATFORM_AI_MODEL=gpt-5.5
 FLOAT_BIND_ADDRESS=127.0.0.1
 FLOAT_PORT=3100
 ```
@@ -52,7 +56,14 @@ ACCOUNT_STORAGE_ROOT=/data/storage
 - 同一浏览器切换账号时会先清理上一账号本地数据，再恢复当前账号备份。
 - 数据管理页保留“立即备份”和“云端恢复”入口。
 
-## 5. 并行部署
+## 5. 平台 AI 与首次角色
+
+- 浏览器只访问同源 `/api/platform-ai/v1`，真实网关令牌不会进入前端构建产物。
+- 新账号自动使用平台模型，不需要填写 API 地址、模型或 Key。
+- 云恢复后仍没有角色时，页面会要求创建第一个角色，并同步创建聊天联系人与会话。
+- 已有角色的账号不会重复出现首次引导。
+
+## 6. 并行部署
 
 ```bash
 ./scripts/deploy-friends.sh
@@ -62,7 +73,7 @@ ACCOUNT_STORAGE_ROOT=/data/storage
 
 首次部署可由现有 Caddy 将 HTTPS 二级域名反向代理到 Docker 网络中的 `float-friends:3000`。
 
-## 6. 验收
+## 7. 验收
 
 1. 未登录访问首页时只显示账号、密码和“登录 / 注册”。
 2. 新用户名可以注册，已有用户名只能使用正确密码登录。

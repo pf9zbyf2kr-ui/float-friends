@@ -8,9 +8,32 @@ import { createAccountCloudBackupConfig, loadCloudBackupConfig, saveCloudBackupC
 import { listCloudBackups, restoreFromCloudManifest } from "@/lib/cloud-backup/engine";
 import { clearModules } from "@/lib/data-management/backup";
 import { DATA_MODULES } from "@/lib/data-management/modules";
+import { ensureSettingsStorageHydrated, loadApiConfigs, loadBindingConfig, saveApiConfigs, saveBindingConfig } from "@/lib/settings-storage";
+import type { ApiConfig } from "@/lib/settings-types";
 
 const LAST_ACCOUNT_KEY = "float_last_local_account_v1";
 const READY_PREFIX = "float_account_cloud_ready_v1:";
+const PLATFORM_API_ID = "platform-managed";
+
+async function ensurePlatformAiConfig(): Promise<void> {
+  await ensureSettingsStorageHydrated();
+  const platformConfig: ApiConfig = {
+    id: PLATFORM_API_ID,
+    name: "Float 平台 AI",
+    provider: "Custom",
+    apiKey: "platform-session",
+    baseUrl: "/api/platform-ai/v1",
+    defaultModel: "gpt-5.5",
+    enableNativeTools: true,
+    enableImageRecognition: false,
+    enableImageGeneration: false,
+    preventEmptyGenerateRambling: true,
+  };
+  const existing = loadApiConfigs().filter((config) => config.id !== PLATFORM_API_ID);
+  saveApiConfigs([platformConfig, ...existing]);
+  const bindings = loadBindingConfig();
+  saveBindingConfig({ ...bindings, globalDefaults: { ...bindings.globalDefaults, apiConfigId: PLATFORM_API_ID } }, false);
+}
 
 export function AccountCloudBootstrap({ children }: { children: ReactNode }) {
   const { account } = useAccount();
@@ -47,6 +70,7 @@ export function AccountCloudBootstrap({ children }: { children: ReactNode }) {
           setDetail("正在恢复云端数据…");
           const result = await restoreFromCloudManifest(config, latest.name, { overwrite: true });
           if (result.errors.length > 0) throw new Error(result.errors[0]);
+          await ensurePlatformAiConfig();
           window.localStorage.setItem(LAST_ACCOUNT_KEY, account.id);
           window.localStorage.setItem(`${READY_PREFIX}${account.id}`, "1");
           window.location.reload();
@@ -54,6 +78,7 @@ export function AccountCloudBootstrap({ children }: { children: ReactNode }) {
         }
       }
 
+      await ensurePlatformAiConfig();
       window.localStorage.setItem(LAST_ACCOUNT_KEY, account.id);
       window.localStorage.setItem(`${READY_PREFIX}${account.id}`, "1");
       if (!cancelled) setReady(true);

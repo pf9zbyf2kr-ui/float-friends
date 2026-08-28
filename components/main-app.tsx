@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 import { AccountGate } from "@/components/auth/account-gate";
 import { AccountCloudBootstrap } from "@/components/account-cloud-bootstrap";
+import { FirstCharacterOnboarding } from "@/components/first-character-onboarding";
 import { CloudBackupScheduler } from "@/components/cloud-backup-scheduler";
 import { RealityBridgeScheduler } from "@/components/reality-bridge-scheduler";
 import { MediaMaintenanceScheduler } from "@/components/media-maintenance-scheduler";
@@ -280,22 +281,24 @@ export function MainApp() {
   return (
     <AccountGate>
       <AccountCloudBootstrap>
-        {!splashDismissed ? (
-          <SplashScreen ready={hydrated} onEnter={() => setSplashDismissed(true)} />
-        ) : (
-          <main className="app-root">
-            <MusicProvider>
-              <DesktopShell
-                initialThemeProfile={preparedDesktopTheme?.profile}
-                initialThemeAssets={preparedDesktopTheme?.assets}
-              />
-              <OfflinePushRevampAnnouncement />
-              <CloudBackupScheduler />
-              <RealityBridgeScheduler />
-              <MediaMaintenanceScheduler />
-            </MusicProvider>
-          </main>
-        )}
+        <FirstCharacterOnboarding>
+          {!splashDismissed ? (
+            <SplashScreen ready={hydrated} onEnter={() => setSplashDismissed(true)} />
+          ) : (
+            <main className="app-root">
+              <MusicProvider>
+                <DesktopShell
+                  initialThemeProfile={preparedDesktopTheme?.profile}
+                  initialThemeAssets={preparedDesktopTheme?.assets}
+                />
+                <OfflinePushRevampAnnouncement />
+                <CloudBackupScheduler />
+                <RealityBridgeScheduler />
+                <MediaMaintenanceScheduler />
+              </MusicProvider>
+            </main>
+          )}
+        </FirstCharacterOnboarding>
       </AccountCloudBootstrap>
     </AccountGate>
   );

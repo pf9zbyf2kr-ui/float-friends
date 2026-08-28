@@ -4,6 +4,7 @@ services:
       context: .
       args:
         NEXT_PUBLIC_SOURCE_CODE_URL: ${NEXT_PUBLIC_SOURCE_CODE_URL:-https://github.com/afufu/float-friends}
+        NEXT_PUBLIC_PLATFORM_AI_MANAGED: "true"
     restart: unless-stopped
     env_file:
       - path: .env
@@ -15,6 +16,8 @@ services:
       OPEN_REGISTRATION: "true"
       ACCOUNT_SQLITE_PATH: /data/accounts/accounts.sqlite
       ACCOUNT_STORAGE_ROOT: /data/storage
+      PLATFORM_AI_BASE_URL: ${PLATFORM_AI_BASE_URL:-http://gateway:8787/v1}
+      PLATFORM_AI_MODEL: ${PLATFORM_AI_MODEL:-gpt-5.5}
     ports:
       - "${FLOAT_BIND_ADDRESS:-127.0.0.1}:${FLOAT_PORT:-3100}:3000"
     volumes:

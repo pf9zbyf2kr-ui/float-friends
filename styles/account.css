@@ -103,7 +103,8 @@ main.app-root.account-gate-root {
   font-weight: 700;
 }
 
-.account-gate-form input {
+.account-gate-form input,
+.account-gate-form textarea {
   width: 100%;
   min-height: 48px;
   border: 1px solid rgba(32, 38, 51, 0.1);
@@ -116,7 +117,17 @@ main.app-root.account-gate-root {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.account-gate-form input:focus {
+.account-gate-form textarea {
+  min-height: 112px;
+  resize: vertical;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+
+.account-gate-form input:focus,
+.account-gate-form textarea:focus {
   border-color: rgba(90, 118, 255, 0.5);
   box-shadow: 0 0 0 4px rgba(90, 118, 255, 0.12);
 }
@@ -189,7 +200,8 @@ main.app-root.account-gate-root {
     gap: 6px;
   }
 
-  .account-gate-form input {
+  .account-gate-form input,
+  .account-gate-form textarea {
     min-height: 46px;
     border-radius: 15px;
     padding: 0 13px;
