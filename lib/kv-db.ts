@@ -17,6 +17,7 @@ const kvDb = new KvDatabase();
 // ── In-memory cache ──
 const _cache = new Map<string, string>();
 let _hydrated = false;
+let _hydrationPromise: Promise<void> | null = null;
 
 // ── Migration registry ──
 const _fixedKeys: string[] = [];
@@ -111,6 +112,8 @@ function isAbortLikeError(err: unknown): boolean {
 // ── Hydration (call once at app startup) ──
 export async function hydrateKvDb(): Promise<void> {
     if (_hydrated || typeof window === "undefined") return;
+    if (_hydrationPromise) return _hydrationPromise;
+    _hydrationPromise = (async () => {
     try {
         // Load existing IDB data into cache
         const all = await kvDb.entries.toArray();
@@ -153,6 +156,12 @@ export async function hydrateKvDb(): Promise<void> {
         console.warn("[KvDB] hydration error:", err);
     }
     _hydrated = true;
+    })();
+    try {
+        await _hydrationPromise;
+    } finally {
+        _hydrationPromise = null;
+    }
 }
 
 // ── Synchronous read (IndexedDB-backed in-memory cache only) ──

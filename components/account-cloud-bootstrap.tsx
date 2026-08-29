@@ -8,6 +8,7 @@ import { createAccountCloudBackupConfig, loadCloudBackupConfig, saveCloudBackupC
 import { listCloudBackups, restoreFromCloudManifest } from "@/lib/cloud-backup/engine";
 import { clearModules } from "@/lib/data-management/backup";
 import { DATA_MODULES } from "@/lib/data-management/modules";
+import { hydrateKvDb } from "@/lib/kv-db";
 import { ensureSettingsStorageHydrated, loadApiConfigs, loadBindingConfig, saveApiConfigs, saveBindingConfig } from "@/lib/settings-storage";
 import type { ApiConfig } from "@/lib/settings-types";
 
@@ -55,6 +56,10 @@ export function AccountCloudBootstrap({ children }: { children: ReactNode }) {
 
     let cancelled = false;
     void (async () => {
+      // Child effects run before MainApp's hydration effect. Wait here too so
+      // returning from the background can never overwrite IDB-backed settings
+      // with an empty in-memory KV cache.
+      await hydrateKvDb();
       const config = createAccountCloudBackupConfig(account.id);
       const previousAccountId = window.localStorage.getItem(LAST_ACCOUNT_KEY) || "";
       const accountChanged = Boolean(previousAccountId && previousAccountId !== account.id);
